@@ -1,4 +1,4 @@
-/* suckcam: a camera app that does exactly one thing.
+/* dacam: a camera app that does exactly one thing.
  * live preview + shutter + self-timer, ~500 lines total, zero GUI
  * toolkit, zero video framework. */
 #define _POSIX_C_SOURCE 199309L
