@@ -31,6 +31,14 @@ OBJ = $(SRC:.c=.o)
 
 all: $(BIN)
 
+# config.h is generated from config.def.h on first build and never
+# touched again — edit config.h directly, config.def.h stays the
+# tracked template. (suckless convention)
+config.h:
+	cp config.def.h $@
+
+$(OBJ): config.h
+
 $(BIN): $(OBJ)
 	$(CC) -o $@ $(OBJ) $(LDLIBS)
 	@echo "built $(BIN) [$(BACKEND)]"
@@ -66,4 +74,8 @@ uninstall:
 clean:
 	rm -f $(BIN) $(OBJ) xdg-shell-client-protocol.h xdg-shell-protocol.c
 
-.PHONY: all install uninstall clean
+# distclean also removes your generated config.h — use with care
+distclean: clean
+	rm -f config.h
+
+.PHONY: all install uninstall clean distclean
