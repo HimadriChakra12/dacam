@@ -1,4 +1,4 @@
-/* dacam: a camera app that does exactly one thing.
+/* suckcam: a camera app that does exactly one thing.
  * live preview + shutter + self-timer, ~500 lines total, zero GUI
  * toolkit, zero video framework. */
 #define _POSIX_C_SOURCE 199309L
@@ -32,6 +32,7 @@ static int timer_armed = 0;
 static struct timespec timer_deadline;
 static int pending_shot = 0;
 static int open_after_shot = 0; /* set by Shift+O: open the photo once it's saved */
+static int quit_requested = 0;
 
 typedef struct { int x, y, w, h; } Rect;
 static Rect btn_rect[BTN_COUNT];
@@ -126,7 +127,7 @@ static void on_key(uint32_t key, uint32_t mods) {
 			timer_deadline.tv_sec += timer_seconds_default;
 		}
 	} else if (key == key_quit) {
-		exit(0);
+		quit_requested = 1;
 	} else if (key == key_open) {
 		if (mods & MOD_SHIFT) {
 			/* Shift+O: capture now, open it once save_current_frame()
@@ -157,7 +158,8 @@ static void on_click(int x, int y) {
 			}
 			break;
 		case BTN_QUIT:
-			exit(0);
+			quit_requested = 1;
+			break;
 		}
 	}
 }
@@ -219,6 +221,8 @@ int main(void) {
 	};
 
 	for (;;) {
+		if (quit_requested) break;
+
 		/* redraw at ~30fps while polling both fds; the countdown digit
 		 * and the timer's expiry are both timing-sensitive enough that
 		 * we don't want to block indefinitely on either fd. */
