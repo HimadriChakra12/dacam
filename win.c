@@ -43,7 +43,7 @@ struct Win {
 
 static struct wl_buffer *make_buffer(Win *w, uint32_t **out_pixels) {
 	int size = w->stride * w->height;
-	char name[] = "/suckcam-XXXXXX";
+	char name[] = "/dacam-XXXXXX";
 	int fd = -1;
 	for (int i = 0; i < 100 && fd < 0; i++) {
 		name[9] = 'A' + (rand() % 26);
@@ -219,8 +219,8 @@ Win *win_open(int width, int height, ClickHandler on_click, KeyHandler on_key) {
 	xdg_surface_add_listener(w->xdg_surface, &xdg_surface_listener, w);
 	w->xdg_toplevel = xdg_surface_get_toplevel(w->xdg_surface);
 	xdg_toplevel_add_listener(w->xdg_toplevel, &toplevel_listener, w);
-	xdg_toplevel_set_title(w->xdg_toplevel, "suckcam");
-	xdg_toplevel_set_app_id(w->xdg_toplevel, "suckcam");
+	xdg_toplevel_set_title(w->xdg_toplevel, "dacam");
+	xdg_toplevel_set_app_id(w->xdg_toplevel, "dacam");
 	wl_surface_commit(w->surface);
 	wl_display_roundtrip(w->display); /* get initial configure */
 
