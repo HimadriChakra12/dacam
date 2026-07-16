@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=dacam
+GenericName=Camera
+Comment=Live preview, shutter, self-timer — nothing else
+Exec=dacam
+Icon=dacam
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;
+Keywords=camera;webcam;v4l2;photo;capture;
+StartupNotify=false

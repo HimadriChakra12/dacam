@@ -9,6 +9,11 @@ BIN = dacam
 
 WL_PROTO_DIR := $(shell pkg-config --variable=pkgdatadir wayland-protocols)
 
+PREFIX  ?= /usr
+BINDIR  := $(PREFIX)/bin
+ICONDIR := $(PREFIX)/share/icons/hicolor/256x256/apps
+APPDIR  := $(PREFIX)/share/applications
+
 all: $(BIN)
 
 xdg-shell-client-protocol.h:
@@ -23,7 +28,17 @@ $(BIN): $(OBJ)
 %.o: %.c xdg-shell-client-protocol.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+install: $(BIN)
+	install -Dm755 $(BIN)           $(DESTDIR)$(BINDIR)/$(BIN)
+	install -Dm644 logo.png         $(DESTDIR)$(ICONDIR)/dacam.png
+	install -Dm644 dacam.desktop  $(DESTDIR)$(APPDIR)/dacam.desktop
+
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/$(BIN)
+	rm -f $(DESTDIR)$(ICONDIR)/dacam.png
+	rm -f $(DESTDIR)$(APPDIR)/dacam.desktop
+
 clean:
 	rm -f $(BIN) $(OBJ) xdg-shell-client-protocol.h xdg-shell-protocol.c
 
-.PHONY: all clean
+.PHONY: all install uninstall clean
