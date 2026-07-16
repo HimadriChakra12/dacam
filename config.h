@@ -34,10 +34,10 @@ static const char *btn_labels[BTN_COUNT] = {
 
 /* keyboard bindings — raw Linux evdev keycodes (linux/input-event-codes.h).
  * These work without xkbcommon on any layout-independent basis. */
-static const uint32_t key_shoot = KEY_SPACE;   /* space  → shoot */
+static const uint32_t key_shoot = KEY_O;   /* space  → shoot */
 static const uint32_t key_timer = KEY_ENTER;   /* return → toggle timer */
 static const uint32_t key_quit  = KEY_Q;       /* q      → quit */
-static const uint32_t key_open  = KEY_O;       /* o      → open latest photo
+static const uint32_t key_open  = KEY_SPACE;       /* o      → open latest photo
                                                  * Shift+o → capture, then open it */
 
 static const char *viewer_argv[] = { "swat", "-f", NULL };
