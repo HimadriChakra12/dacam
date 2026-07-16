@@ -45,18 +45,49 @@ static void layout_buttons(void) {
 	}
 }
 
+static const char *resolved_save_dir(void) {
+	/* If config.h set an explicit directory, use it verbatim. */
+	if (save_dir) return save_dir;
+	/* Otherwise build $HOME/<save_subdir> once and cache it. */
+	static char dir[512];
+	if (dir[0]) return dir;
+	const char *home = getenv("HOME");
+	if (!home || !*home) {
+		fprintf(stderr, "dacam: $HOME not set, saving to current directory\n");
+		dir[0] = '.'; dir[1] = '\0';
+	} else {
+		snprintf(dir, sizeof(dir), "%s/%s", home, save_subdir);
+	}
+	return dir;
+}
+
 static void save_current_frame(void) {
 	if (!last_frame) return;
 	time_t t = time(NULL);
 	struct tm tm; localtime_r(&t, &tm);
 	char path[512];
 	snprintf(path, sizeof(path), "%s/%s_%04d-%02d-%02d_%02d%02d%02d.png",
-	         save_dir, save_prefix, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+	         resolved_save_dir(), save_prefix,
+	         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 	         tm.tm_hour, tm.tm_min, tm.tm_sec);
 	if (stbi_write_png(path, cam.width, cam.height, 3, last_frame, cam.width * 3))
 		fprintf(stderr, "saved %s\n", path);
 	else
 		fprintf(stderr, "failed to write %s\n", path);
+}
+
+static void on_key(uint32_t key) {
+	if (key == key_shoot) {
+		pending_shot = 1;
+	} else if (key == key_timer) {
+		timer_armed = !timer_armed;
+		if (timer_armed) {
+			clock_gettime(CLOCK_MONOTONIC, &timer_deadline);
+			timer_deadline.tv_sec += timer_seconds_default;
+		}
+	} else if (key == key_quit) {
+		exit(0);
+	}
 }
 
 static void on_click(int x, int y) {
@@ -127,7 +158,7 @@ int main(void) {
 	win_w = cam.width;
 	win_h = cam.height + ctrl_height;
 
-	win = win_open(win_w, win_h, on_click);
+	win = win_open(win_w, win_h, on_click, on_key);
 	layout_buttons();
 
 	struct pollfd pfds[2] = {

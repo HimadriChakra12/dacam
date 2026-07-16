@@ -4,12 +4,14 @@
 #include <stdint.h>
 
 typedef void (*ClickHandler)(int x, int y);
+typedef void (*KeyHandler)(uint32_t keycode);  /* raw Linux evdev keycode */
 
 typedef struct Win Win;
 
 /* Opens a Wayland window of given size, ARGB8888 software surface.
- * on_click fires on pointer button-down with surface-local coords. */
-Win *win_open(int width, int height, ClickHandler on_click);
+ * on_click fires on pointer button-down with surface-local coords.
+ * on_key fires on key-down with the raw Linux evdev keycode. */
+Win *win_open(int width, int height, ClickHandler on_click, KeyHandler on_key);
 
 /* Returns the pixel buffer for the frame currently being drawn into.
  * Caller writes ARGB8888, row-major, stride == width*4. */

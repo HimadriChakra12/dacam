@@ -1,5 +1,6 @@
 /* suckcam config.h — edit, then `make` */
 #include <stdint.h>
+#include <linux/input-event-codes.h>
 
 static const char *video_device = "/dev/video0";
 static const int   cap_width    = 640;
@@ -9,8 +10,12 @@ static const int   cap_height   = 480;
 static const int   ctrl_height  = 56;
 
 static const int   timer_seconds_default = 3;
-static const char *save_dir = ".";       /* where captures land */
-static const char *save_prefix = "shot";  /* shot_2026-07-16_...png */
+
+/* save_dir: use NULL to mean $HOME/Pictures (resolved at runtime).
+ * Set to an absolute path like "/tmp" to override. */
+static const char *save_dir    = NULL;
+static const char *save_subdir = "Pictures";   /* appended to $HOME when save_dir==NULL */
+static const char *save_prefix = "shot";       /* shot_2026-07-16_...png */
 
 /* ARGB, matches gruvbox */
 static const uint32_t col_bg      = 0xFF1D2021; /* bg0 */
@@ -24,5 +29,11 @@ static const uint32_t col_timer   = 0xFFFABD2F; /* yellow, countdown text */
 enum { BTN_SHOOT, BTN_TIMER, BTN_QUIT, BTN_COUNT };
 
 static const char *btn_labels[BTN_COUNT] = {
-	"SHOOT", "TIMER", "QUIT",
+	"SHOOT [spc]", "TIMER [ret]", "QUIT [q]",
 };
+
+/* keyboard bindings — raw Linux evdev keycodes (linux/input-event-codes.h).
+ * These work without xkbcommon on any layout-independent basis. */
+static const uint32_t key_shoot = KEY_SPACE;   /* space  → shoot */
+static const uint32_t key_timer = KEY_ENTER;   /* return → toggle timer */
+static const uint32_t key_quit  = KEY_Q;       /* q      → quit */
