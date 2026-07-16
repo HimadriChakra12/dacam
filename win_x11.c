@@ -32,6 +32,7 @@ struct Win {
 	int          width, height;
 	ClickHandler on_click;
 	KeyHandler   on_key;
+	int          shift_down;
 
 	/* MIT-SHM double buffer */
 	int              shm_ok;
@@ -93,6 +94,8 @@ static uint32_t keysym_to_evdev(KeySym ks) {
 	case XK_KP_Enter:     return KEY_ENTER;
 	case XK_q:
 	case XK_Q:            return KEY_Q;
+	case XK_o:
+	case XK_O:            return KEY_O;
 	/* extend here for any future config.h bindings */
 	default:              return 0; /* unmapped — on_key ignores 0 */
 	}
@@ -117,7 +120,8 @@ Win *win_open(int width, int height, ClickHandler on_click, KeyHandler on_key) {
 	/* create window */
 	XSetWindowAttributes swa = {
 		.background_pixel = BlackPixel(w->dpy, w->scr),
-		.event_mask = ExposureMask | ButtonPressMask | KeyPressMask
+		.event_mask = ExposureMask | ButtonPressMask
+		            | KeyPressMask | KeyReleaseMask
 		            | StructureNotifyMask,
 	};
 	w->win = XCreateWindow(
@@ -209,9 +213,20 @@ int win_dispatch(Win *w, int timeout_ms) {
 
 		case KeyPress: {
 			KeySym ks = XLookupKeysym(&ev.xkey, 0);
+			if (ks == XK_Shift_L || ks == XK_Shift_R) {
+				w->shift_down = 1;
+				break;
+			}
 			uint32_t evdev = keysym_to_evdev(ks);
 			if (evdev && w->on_key)
-				w->on_key(evdev);
+				w->on_key(evdev, w->shift_down ? MOD_SHIFT : 0);
+			break;
+		}
+
+		case KeyRelease: {
+			KeySym ks = XLookupKeysym(&ev.xkey, 0);
+			if (ks == XK_Shift_L || ks == XK_Shift_R)
+				w->shift_down = 0;
 			break;
 		}
 

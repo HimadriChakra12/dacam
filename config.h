@@ -37,3 +37,7 @@ static const char *btn_labels[BTN_COUNT] = {
 static const uint32_t key_shoot = KEY_SPACE;   /* space  → shoot */
 static const uint32_t key_timer = KEY_ENTER;   /* return → toggle timer */
 static const uint32_t key_quit  = KEY_Q;       /* q      → quit */
+static const uint32_t key_open  = KEY_O;       /* o      → open latest photo
+                                                 * Shift+o → capture, then open it */
+
+static const char *viewer_argv[] = { "swayimg", "", NULL };

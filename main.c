@@ -9,6 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <errno.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -22,10 +26,12 @@ static Cam cam;
 static Win *win;
 static int win_w, win_h;
 static uint8_t *last_frame; /* rgb24 copy of the most recent preview frame */
+static char last_saved_path[512]; /* empty until first successful save */
 
 static int timer_armed = 0;
 static struct timespec timer_deadline;
 static int pending_shot = 0;
+static int open_after_shot = 0; /* set by Shift+O: open the photo once it's saved */
 
 typedef struct { int x, y, w, h; } Rect;
 static Rect btn_rect[BTN_COUNT];
@@ -61,8 +67,8 @@ static const char *resolved_save_dir(void) {
 	return dir;
 }
 
-static void save_current_frame(void) {
-	if (!last_frame) return;
+static int save_current_frame(void) {
+	if (!last_frame) return 0;
 	time_t t = time(NULL);
 	struct tm tm; localtime_r(&t, &tm);
 	char path[512];
@@ -70,13 +76,47 @@ static void save_current_frame(void) {
 	         resolved_save_dir(), save_prefix,
 	         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 	         tm.tm_hour, tm.tm_min, tm.tm_sec);
-	if (stbi_write_png(path, cam.width, cam.height, 3, last_frame, cam.width * 3))
+	if (stbi_write_png(path, cam.width, cam.height, 3, last_frame, cam.width * 3)) {
 		fprintf(stderr, "saved %s\n", path);
-	else
-		fprintf(stderr, "failed to write %s\n", path);
+		snprintf(last_saved_path, sizeof(last_saved_path), "%s", path);
+		return 1;
+	}
+	fprintf(stderr, "failed to write %s\n", path);
+	return 0;
 }
 
-static void on_key(uint32_t key) {
+/* Spawns viewer_argv (config.h) on `path` via fork+execvp — no shell,
+ * so no quoting/injection concerns and flags pass through untouched.
+ * Non-blocking: we don't wait() here, SIGCHLD is set to SIG_IGN in
+ * main() so the child is auto-reaped without becoming a zombie. */
+static void open_in_viewer(const char *path) {
+	if (!path || !*path) {
+		fprintf(stderr, "dacam: no photo taken yet\n");
+		return;
+	}
+	int argc = 0;
+	while (viewer_argv[argc]) argc++;
+
+	char *argv[argc + 2];
+	for (int i = 0; i < argc; i++) argv[i] = (char *)viewer_argv[i];
+	argv[argc]     = (char *)path;
+	argv[argc + 1] = NULL;
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		perror("fork");
+		return;
+	}
+	if (pid == 0) {
+		execvp(argv[0], argv);
+		/* execvp only returns on failure */
+		fprintf(stderr, "dacam: failed to exec '%s': %s\n", argv[0], strerror(errno));
+		_exit(127);
+	}
+	/* parent: nothing to do, SIGCHLD is ignored so no zombie accrues */
+}
+
+static void on_key(uint32_t key, uint32_t mods) {
 	if (key == key_shoot) {
 		pending_shot = 1;
 	} else if (key == key_timer) {
@@ -87,6 +127,16 @@ static void on_key(uint32_t key) {
 		}
 	} else if (key == key_quit) {
 		exit(0);
+	} else if (key == key_open) {
+		if (mods & MOD_SHIFT) {
+			/* Shift+O: capture now, open it once save_current_frame()
+			 * writes it out on this same loop iteration. */
+			pending_shot = 1;
+			open_after_shot = 1;
+		} else {
+			/* o: open whatever was captured most recently. */
+			open_in_viewer(last_saved_path);
+		}
 	}
 }
 
@@ -147,6 +197,8 @@ static void draw_frame(void) {
 }
 
 int main(void) {
+	signal(SIGCHLD, SIG_IGN); /* auto-reap viewer children spawned by key_view */
+
 	win_w = cap_width;
 	win_h = cap_height + ctrl_height;
 
@@ -190,7 +242,11 @@ int main(void) {
 		}
 		if (pending_shot) {
 			pending_shot = 0;
-			save_current_frame();
+			int ok = save_current_frame();
+			if (open_after_shot) {
+				open_after_shot = 0;
+				if (ok) open_in_viewer(last_saved_path);
+			}
 		}
 
 		draw_frame();

@@ -4,7 +4,11 @@
 #include <stdint.h>
 
 typedef void (*ClickHandler)(int x, int y);
-typedef void (*KeyHandler)(uint32_t keycode);  /* raw Linux evdev keycode */
+
+/* mods is a bitmask; currently only shift is tracked (no xkbcommon dep —
+ * both backends watch the raw shift keycodes themselves). */
+#define MOD_SHIFT (1u << 0)
+typedef void (*KeyHandler)(uint32_t keycode, uint32_t mods);
 
 typedef struct Win Win;
 

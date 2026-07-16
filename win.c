@@ -36,6 +36,7 @@ struct Win {
 	int pointer_x, pointer_y;
 	ClickHandler on_click;
 	KeyHandler   on_key;
+	int shift_down;
 	int closed;
 };
 
@@ -102,12 +103,25 @@ static const struct wl_pointer_listener pointer_listener = {
  * directly after Wayland 1.13 adjusted the offset). Actually Wayland
  * sends (linux_keycode) directly — same values as linux/input-event-codes.h.
  * We match those against config.h's key_shoot/key_timer/key_quit. */
+/* wl_keyboard sends raw Linux evdev keycodes (same values as
+ * linux/input-event-codes.h). We watch KEY_LEFTSHIFT/KEY_RIGHTSHIFT
+ * ourselves to build a mods bitmask — avoids an xkbcommon dependency
+ * just to know whether shift is held. */
+#define KEY_LEFTSHIFT_  42
+#define KEY_RIGHTSHIFT_ 54
+
 static void kbd_key(void *d, struct wl_keyboard *k, uint32_t serial,
                     uint32_t time, uint32_t key, uint32_t state) {
 	(void)k;(void)serial;(void)time;
 	Win *w = d;
-	if (state == WL_KEYBOARD_KEY_STATE_PRESSED && w->on_key)
-		w->on_key(key);
+	int pressed = (state == WL_KEYBOARD_KEY_STATE_PRESSED);
+
+	if (key == KEY_LEFTSHIFT_ || key == KEY_RIGHTSHIFT_) {
+		w->shift_down = pressed;
+		return;
+	}
+	if (pressed && w->on_key)
+		w->on_key(key, w->shift_down ? MOD_SHIFT : 0);
 }
 static void kbd_noop_enter(void *d, struct wl_keyboard *k, uint32_t s,
                             struct wl_surface *sf, struct wl_array *keys)
