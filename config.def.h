@@ -40,4 +40,4 @@ static const uint32_t key_quit  = KEY_Q;       /* q      → quit */
 static const uint32_t key_open  = KEY_O;       /* o      → open latest photo
                                                  * Shift+o → capture, then open it */
 
-static const char *viewer_argv[] = { "swat", "-f", NULL };
+static const char *viewer_argv[] = { "swayimg", "", NULL };
