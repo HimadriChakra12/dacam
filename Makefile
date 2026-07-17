@@ -58,7 +58,7 @@ src/xdg-shell-protocol.c: src/xdg-shell-client-protocol.h
 
 ifeq ($(BACKEND),wayland)
 # Make wayland objects depend on the generated header
-win.o xdg-shell-protocol.o main.o draw.o v4l2cap.o: src/xdg-shell-client-protocol.h
+win.o src/xdg-shell-protocol.o main.o draw.o v4l2cap.o: src/xdg-shell-client-protocol.h
 endif
 
 install: $(BIN)
