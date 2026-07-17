@@ -15,12 +15,12 @@
 #include <errno.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include "src/stb_image_write.h"
 
 #include "config.h"
-#include "v4l2cap.h"
-#include "win.h"
-#include "draw.h"
+#include "src/v4l2cap.h"
+#include "src/win.h"
+#include "src/draw.h"
 
 static Cam cam;
 static Win *win;

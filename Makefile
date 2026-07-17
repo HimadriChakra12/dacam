@@ -11,14 +11,14 @@ APPDIR  := $(PREFIX)/share/applications
 CFLAGS  += -std=c11 -Wall -Wextra -O2
 LDLIBS  += -lm
 
-SRC_COMMON = main.c v4l2cap.c draw.c
+SRC_COMMON = main.c src/v4l2cap.c src/draw.c
 
 ifeq ($(BACKEND),x11)
-  SRC_BACKEND  = win_x11.c
+  SRC_BACKEND  = src/win_x11.c
   PKGS         = x11 xext
 else
   BACKEND      = wayland
-  SRC_BACKEND  = win.c xdg-shell-protocol.c
+  SRC_BACKEND  = src/win.c src/xdg-shell-protocol.c
   PKGS         = wayland-client
   WL_PROTO_DIR := $(shell pkg-config --variable=pkgdatadir wayland-protocols 2>/dev/null)
 endif
@@ -48,23 +48,23 @@ $(BIN): $(OBJ)
 
 # Wayland protocol glue — only needed when BACKEND=wayland, but harmless
 # to declare unconditionally; make only runs them when the files are missing.
-xdg-shell-client-protocol.h:
+src/xdg-shell-client-protocol.h:
 	wayland-scanner client-header \
 	    $(WL_PROTO_DIR)/stable/xdg-shell/xdg-shell.xml $@
 
-xdg-shell-protocol.c: xdg-shell-client-protocol.h
+src/xdg-shell-protocol.c: src/xdg-shell-client-protocol.h
 	wayland-scanner private-code \
 	    $(WL_PROTO_DIR)/stable/xdg-shell/xdg-shell.xml $@
 
 ifeq ($(BACKEND),wayland)
 # Make wayland objects depend on the generated header
-win.o xdg-shell-protocol.o main.o draw.o v4l2cap.o: xdg-shell-client-protocol.h
+win.o xdg-shell-protocol.o main.o draw.o v4l2cap.o: src/xdg-shell-client-protocol.h
 endif
 
 install: $(BIN)
 	install -Dm755 $(BIN)          $(DESTDIR)$(BINDIR)/$(BIN)
-	install -Dm644 logo.png        $(DESTDIR)$(ICONDIR)/dacam.png
-	install -Dm644 dacam.desktop   $(DESTDIR)$(APPDIR)/dacam.desktop
+	install -Dm644 app/logo.png        $(DESTDIR)$(ICONDIR)/dacam.png
+	install -Dm644 app/dacam.desktop   $(DESTDIR)$(APPDIR)/dacam.desktop
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/$(BIN)
