@@ -31,9 +31,6 @@ OBJ = $(SRC:.c=.o)
 
 all: $(BIN)
 
-# config.h is generated from config.def.h on first build and never
-# touched again — edit config.h directly, config.def.h stays the
-# tracked template. (suckless convention)
 config.h:
 	cp config.def.h $@
 
@@ -46,23 +43,19 @@ $(BIN): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Wayland protocol glue — only needed when BACKEND=wayland, but harmless
-# to declare unconditionally; make only runs them when the files are missing.
+ifeq ($(BACKEND),wayland)
+src/win.o src/xdg-shell-protocol.o main.o src/draw.o src/v4l2cap.o: src/xdg-shell-client-protocol.h
 src/xdg-shell-client-protocol.h:
+	$(if $(WL_PROTO_DIR),,$(error WL_PROTO_DIR is empty — install wayland-protocols and ensure pkg-config can find it))
 	wayland-scanner client-header \
 	    $(WL_PROTO_DIR)/stable/xdg-shell/xdg-shell.xml $@
-
 src/xdg-shell-protocol.c: src/xdg-shell-client-protocol.h
 	wayland-scanner private-code \
 	    $(WL_PROTO_DIR)/stable/xdg-shell/xdg-shell.xml $@
-
-ifeq ($(BACKEND),wayland)
-# Make wayland objects depend on the generated header
-win.o src/xdg-shell-protocol.o main.o draw.o v4l2cap.o: src/xdg-shell-client-protocol.h
 endif
 
-install: $(BIN)
-	install -Dm755 $(BIN)          $(DESTDIR)$(BINDIR)/$(BIN)
+install:
+	install -Dm755 $(BIN)              $(DESTDIR)$(BINDIR)/$(BIN)
 	install -Dm644 app/logo.png        $(DESTDIR)$(ICONDIR)/dacam.png
 	install -Dm644 app/dacam.desktop   $(DESTDIR)$(APPDIR)/dacam.desktop
 
@@ -72,9 +65,8 @@ uninstall:
 	rm -f $(DESTDIR)$(APPDIR)/dacam.desktop
 
 clean:
-	rm -f $(BIN) $(OBJ) xdg-shell-client-protocol.h xdg-shell-protocol.c
+	rm -f $(BIN) $(OBJ) src/xdg-shell-client-protocol.h src/xdg-shell-protocol.c
 
-# distclean also removes your generated config.h — use with care
 distclean: clean
 	rm -f config.h
 
