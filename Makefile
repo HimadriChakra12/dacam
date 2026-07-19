@@ -1,5 +1,5 @@
 # BACKEND=wayland (default) or BACKEND=x11
-BACKEND ?= wayland
+BACKEND ?= $(shell echo "$$XDG_SESSION_TYPE")
 
 CC      ?= cc
 BIN      = dacam
